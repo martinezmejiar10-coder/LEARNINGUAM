@@ -1,0 +1,269 @@
+@model List<ActividadContenido>
+@using LEARNINGUAM.Web.Models
+@using System.Text.Json
+
+<input type="hidden" id="IdCurso" value="@ViewBag.IdCurso" />
+<input type="hidden" id="IdActividad" value="@ViewBag.IdActividad" />
+
+<div class="container mt-4">
+
+    <div class="card p-4">
+
+        <h4>Arrastra las palabras</h4>
+
+        <!-- TEXTO -->
+        <p id="textoActividad"></p>
+
+        <hr>
+
+        <!-- PALABRAS -->
+        <div id="palabras" class="d-flex gap-2 flex-wrap"></div>
+
+        <div class="mt-4 text-end">
+            <button class="btn btn-success" onclick="evaluar()">
+                Evaluar
+            </button>
+        </div>
+
+        <!-- RESULTADO -->
+        <div id="resultado" class="mt-4"></div>
+
+    </div>
+
+</div> 
+
+<style>
+.drop {
+    display: inline-block;
+    min-width: 80px;
+    padding: 5px 10px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    text-align: center;
+    margin: 2px;
+}
+
+/* palabra colocada */
+.drop.lleno {
+    border: 2px solid #0d6efd;
+    background-color: #e7f1ff;
+    font-weight: bold;
+}
+
+/* correcto */
+.correcto {
+    background-color: #c3f7c3 !important;
+}
+
+/* incorrecto */
+.incorrecto {
+    background-color: #f8c6c6 !important;
+}
+</style>
+
+<script>
+
+let contenido = @Html.Raw(Json.Serialize(Model.First().Contenido));
+contenido = JSON.parse(contenido);
+
+let texto = contenido.texto;
+
+contenido.espacios.forEach(e => {
+    texto = texto.replace(
+        "[" + e.id + "]",
+        `<span class="drop"
+               data-id="${e.id}"
+               ondrop="drop(event)"
+               ondragover="allowDrop(event)">
+            [____]
+        </span>`
+    );
+});
+
+document.getElementById("textoActividad").innerHTML = texto;
+
+
+let contenedor = document.getElementById("palabras");
+
+contenido.espacios.forEach(e => {
+    contenedor.innerHTML += `
+        <span class="badge bg-primary p-2"
+              draggable="true"
+              ondragstart="drag(event)"
+              id="palabra_${e.id}">
+            ${e.palabra}
+        </span>
+    `;
+});
+
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+
+    let data = ev.dataTransfer.getData("text");
+    let palabra = document.getElementById(data);
+
+    let valorAnterior = ev.target.getAttribute("data-value");
+
+    // devolver palabra anterior
+    if (valorAnterior) {
+        let palabraAnterior = [...document.querySelectorAll('[id^="palabra_"]')]
+            .find(p => p.innerText === valorAnterior);
+
+        if (palabraAnterior) {
+            palabraAnterior.style.display = "inline-block";
+        }
+    }
+
+    // colocar nueva palabra
+    ev.target.innerHTML = `<span>${palabra.innerText}</span>`;
+    ev.target.setAttribute("data-value", palabra.innerText);
+
+    // aplicar estilo visual
+    ev.target.classList.add("lleno");
+
+    // ocultar palabra usada
+    palabra.style.display = "none";
+}
+
+
+function evaluar() {
+
+    let correctas = 0;
+
+    document.querySelectorAll(".drop").forEach(d => {
+
+        let id = d.getAttribute("data-id");
+        let valor = d.getAttribute("data-value");
+
+        let correcta = contenido.espacios.find(e => e.id == id).palabra;
+
+        d.classList.remove("correcto", "incorrecto");
+
+        if (valor && valor.toLowerCase() == correcta.toLowerCase()) {
+            correctas++;
+            d.classList.add("correcto");
+        } else {
+            d.classList.add("incorrecto");
+        }
+    });
+
+    let total = contenido.espacios.length;
+
+    mostrarResultado(correctas, total);
+}
+
+
+function mostrarResultado(correctas, total) {
+
+    let idCurso = document.getElementById("IdCurso").value;
+    let idActividad = document.getElementById("IdActividad").value;
+
+    let contenedor = document.getElementById("resultado");
+
+    let color = correctas === total ? "text-success" : "text-danger";
+
+    contenedor.innerHTML = `
+        <div class="card p-4 text-center">
+
+            <h4>Resultado</h4>
+
+            <p class="fs-5 ${color}">
+                Obtuviste <strong>${correctas} de ${total}</strong>
+            </p>
+
+            <div class="mt-3 d-flex justify-content-center gap-3">
+
+                <button class="btn btn-primary"
+                        onclick="irForo(${idCurso})">
+                    Regresar al Foro de clases
+                </button>
+
+                <button class="btn btn-secondary"
+                        onclick="revisar()">
+                    Revisar respuestas
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+    let respuestas = [];
+
+    document.querySelectorAll(".drop").forEach(d => {
+
+        let id = d.getAttribute("data-id");
+        let valor = d.getAttribute("data-value") || "";
+
+        let correcta = contenido.espacios.find(e => e.id == id).palabra;
+
+        respuestas.push({
+            Id: parseInt(id),
+            Usuario: valor,
+            Correcta: correcta,
+            EsCorrecta: valor.toLowerCase() === correcta.toLowerCase()
+        });
+    });
+
+
+    let hayRespuestas = respuestas.some(r => r.Usuario && r.Usuario.trim() !== "");
+
+    if (!hayRespuestas) {
+        alert("Debes responder al menos un espacio antes de continuar");
+        return;
+    }
+
+    console.log("ENVIANDO RESPUESTAS:", respuestas);
+
+    fetch('/Arrastrar/GuardarRespuesta', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            idActividad: parseInt(idActividad),
+            respuestas: respuestas
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log("Guardado:", data))
+    .catch(err => console.error("Error:", err));
+}
+
+function irForo(idCurso) {
+    window.location.href = `/Cursos/Foro?idCurso=${idCurso}`;
+}
+
+function revisar() {
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    let contenedor = document.getElementById("resultado");
+
+    contenedor.innerHTML += `
+        <div class="mt-4 text-center">
+
+            <button class="btn btn-success"
+                    onclick="irAula()">
+                Regresar al Aula
+            </button>
+
+        </div>
+    `;
+}
+
+function irAula() {
+    let idCurso = document.getElementById("IdCurso").value;
+    window.location.href = `/Cursos/Foro?idCurso=${idCurso}`;
+}
+
+</script>

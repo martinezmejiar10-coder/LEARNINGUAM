@@ -1,0 +1,78 @@
+@model ResultadoCuestionarioVM
+
+<div class="container mt-5">
+
+    <h2 class="text-center">Resultado del cuestionario</h2>
+
+    <div class="text-center mt-4">
+        <h3>@Model.Correctas / @Model.Total</h3>
+        <h4>@Model.Porcentaje %</h4>
+    </div>
+
+    <hr />
+
+    @foreach (var p in Model.Preguntas)
+    {
+        <div class="card p-3 mb-4 shadow-sm">
+
+            <h5 class="fw-bold">@p.TextoPregunta</h5>
+
+            <div class="mt-3">
+
+                <strong> Tus respuestas:</strong>
+
+                @foreach (var op in p.Opciones)
+                {
+                    if (p.OpcionesSeleccionadas.Contains(op.IdOpcion))
+                    {
+                        if (op.EsCorrecta)
+                        {
+                            <div style="color:green;">
+                                 @op.Texto
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="color:red;">
+                                 @op.Texto
+                            </div>
+                        }
+                    }
+                }
+
+                @if (!p.OpcionesSeleccionadas.Any())
+                {
+                    <div class="text-muted">No respondiste esta pregunta</div>
+                }
+
+            </div>
+
+            <div class="mt-3">
+
+                <strong>Las respuestas correctas son:</strong>
+
+                @foreach (var op in p.Opciones)
+                {
+                    if (op.EsCorrecta)
+                    {
+                        <div style="color:green;">
+                             @op.Texto
+                        </div>
+                    }
+                }
+
+            </div>
+
+        </div>
+    }
+
+    <div class="text-center mt-4">
+        <a asp-controller="Cursos"
+           asp-action="Foro"
+           asp-route-idCurso="@Model.IdCurso"
+           class="btn btn-primary">
+            Volver al curso
+        </a>
+    </div>
+
+</div>

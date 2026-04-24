@@ -1,0 +1,191 @@
+<div class="container mt-4">
+
+    <div class="card shadow-lg rounded-4">
+        <div class="card-header bg-primary text-white rounded-top-4">
+            <h4>Constructor de Actividad - Arrastrar Palabras</h4>
+        </div>
+        <div class="alert alert-info">
+            <strong>¿Cómo se crea esta actividad?</strong><br>
+            1. Escribe el texto de la actividad.<br>
+            2. Usa el botón <b>"Insertar espacio"</b> para agregar espacios como [1], [2], etc.<br>
+            3. Define la palabra correcta para cada espacio.<br>
+            4. Guarda la actividad. (Se recomineda ir guardando la actividad conforme se va avanzando)
+        </div>
+
+        <div class="card-body p-4">
+
+            <div class="mb-3">
+                <label class="fw-bold">Texto de la actividad</label>
+
+                <textarea id="textoActividad"
+                          class="form-control"
+                          rows="4"
+                          placeholder="Ej: La [1] permite crear aplicaciones junto a [2] y Css"></textarea>
+            </div>
+
+            <button class="btn btn-secondary mb-4"
+                    onclick="insertarEspacio()">
+                + Insertar espacio
+            </button>
+
+            <hr>
+
+            <h5>Palabras correctas</h5>
+
+            <div id="contenedorEspacios"></div>
+
+            <div class="text-end mt-4">
+                <button class="btn btn-success"
+                        onclick="guardarActividad()">
+                    Guardar Actividad
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+<script>
+
+    let contenidoGuardado =@Html.Raw(Json.Serialize(ViewBag.Contenido));
+    let contadorEspacios = 0;
+    let espacios = [];
+
+    if (contenidoGuardado && contenidoGuardado !== "null") {
+
+        let data = JSON.parse(contenidoGuardado);
+
+        document.getElementById("textoActividad").value = data.texto;
+
+        espacios = data.espacios || [];
+
+        document.querySelector("h4").innerText = "Editar actividad de arrastrar";
+
+        if (espacios.length > 0) {
+            contadorEspacios = Math.max(...espacios.map(e => e.id));
+        }
+
+        renderizarEspacios();
+    }
+
+    function insertarEspacio() {
+
+        contadorEspacios++;
+
+        let textarea = document.getElementById("textoActividad");
+
+        textarea.value += " [" + contadorEspacios + "]";
+
+        espacios.push({
+            id: contadorEspacios,
+            palabra: ""
+        });
+
+        renderizarEspacios();
+    }
+
+    function renderizarEspacios() {
+
+        let contenedor = document.getElementById("contenedorEspacios");
+        contenedor.innerHTML = "";
+
+        espacios.forEach(e => {
+
+            contenedor.innerHTML += `
+            <div class="card p-3 mb-3 shadow-sm">
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="fw-bold">
+                        Espacio [${e.id}]
+                    </label>
+
+                    <button class="btn btn-sm btn-danger"
+                            onclick="eliminarEspacio(${e.id})">
+                        ✕ 
+                    </button>
+                </div>
+
+                <input type="text"
+                    class="form-control mt-2"
+                    placeholder="Palabra correcta"
+                    value="${e.palabra || ""}"
+                    oninput="actualizarPalabra(${e.id}, this.value)">
+            </div>
+            `;
+        });
+    }
+
+    function actualizarPalabra(id, valor) {
+
+        let espacio = espacios.find(e => e.id === id);
+        espacio.palabra = valor;
+    }
+
+    function guardarActividad() {
+
+        let contenido = {
+
+            texto: document.getElementById("textoActividad").value,
+
+            espacios: espacios 
+        };
+
+        if (espacios.length === 0) {
+            alert("Debes agregar al menos un espacio.");
+            return;
+        }
+        
+
+        fetch('@Url.Action("GuardarContenido","Actividades")', {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+                IdActividad: @ViewBag.IdActividad,
+                tipo: "ARRASTRAR",
+                Contenido: JSON.stringify(contenido)
+            })
+
+        })
+        .then(r => r.json())
+        .then(data => {
+
+            if (data.success) {
+                window.location.href = "/Cursos/Foro?idCurso=@ViewBag.IdCurso";
+            }
+
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+
+        for (let e of espacios) {
+            if (!e.palabra || e.palabra.trim() === "") {
+                alert(`El espacio [${e.id}] no tiene palabra`);
+                return;
+            }
+        }
+    }
+
+
+    function eliminarEspacio(id) {
+
+        if (!confirm(`¿Eliminar espacio [${id}]?`)) return;
+
+        espacios = espacios.filter(e => e.id !== id);
+
+        let textarea = document.getElementById("textoActividad");
+
+        let regex = new RegExp(`\\[${id}\\]`, "g");
+        textarea.value = textarea.value.replace(regex, "");
+
+        renderizarEspacios();
+    }
+
+</script>

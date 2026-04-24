@@ -1,0 +1,154 @@
+@model List<ActividadContenido>
+@using System.Text.Json
+
+<input type="hidden" id="IdCurso" value="@ViewBag.IdCurso" />
+<input type="hidden" id="IdActividad" value="@ViewBag.IdActividad" />
+
+<div class="container mt-4">
+
+    <div class="card p-4">
+
+        <h4>Selecciona la opción correcta</h4>
+
+        <!-- TEXTO DINÁMICO -->
+        <p id="textoActividad"></p>
+
+        <div class="mt-4 text-end">
+            <button class="btn btn-success" onclick="evaluar()">
+                Evaluar
+            </button>
+        </div>
+
+        <!-- RESULTADO -->
+        <div id="resultado" class="mt-4"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+let contenido = @Html.Raw(Json.Serialize(Model.FirstOrDefault()?.Contenido ?? "{}"));
+contenido = JSON.parse(contenido);
+
+let contenedor = document.getElementById("textoActividad");
+contenedor.innerHTML = contenido.texto;
+
+
+contenido.espacios.forEach(e => {
+
+    let select = contenedor.querySelector(`select[data-id='${e.id}']`);
+
+    if (select) {
+
+        select.innerHTML = `<option value="">Seleccionar una opción</option>`;
+
+        e.opciones.forEach(op => {
+
+            select.innerHTML += `<option value="${op.id}">${op.texto}</option>`;
+        });
+    }
+});
+
+
+function evaluar() {
+
+    let correctas = 0;
+
+    document.querySelectorAll("#textoActividad select").forEach(sel => {
+
+        let id = sel.getAttribute("data-id");
+        let valor = sel.value;
+
+        let espacio = contenido.espacios.find(e => e.id == id);
+
+        sel.classList.remove("border-success", "border-danger");
+
+        if (valor && String(valor) === String(espacio.correcta)) {
+
+            correctas++;
+            sel.classList.add("border-success");
+
+        } else {
+
+            sel.classList.add("border-danger");
+        }
+    });
+
+    let total = contenido.espacios.length;
+
+    mostrarResultado(correctas, total);
+}
+
+
+function mostrarResultado(correctas, total) {
+
+    let porcentaje = total > 0 ? (correctas * 100) / total : 0;
+
+    let idCurso = document.getElementById("IdCurso").value;
+    let idActividad = document.getElementById("IdActividad").value;
+
+    let contenedor = document.getElementById("resultado");
+
+    contenedor.innerHTML = `
+        <div class="card p-4 text-center">
+
+            <h4>Resultado</h4>
+
+            <p class="fs-5">
+                ${correctas} / ${total} correctas
+            </p>
+
+            <p class="fw-bold">
+                ${porcentaje}%
+            </p>
+
+            <button class="btn btn-primary mt-3"
+                    onclick="irForo(${idCurso})">
+                Volver al curso
+            </button>
+
+        </div>
+    `;
+
+    let respuestas = [];
+
+    document.querySelectorAll("#textoActividad select").forEach(sel => {
+
+        let id = sel.getAttribute("data-id");
+        let valor = sel.value;
+
+        let espacio = contenido.espacios.find(e => e.id == id);
+
+        let opcionSeleccionada = espacio.opciones.find(op => String(op.id) === String(valor));
+        let opcionCorrecta = espacio.opciones.find(op => String(op.id) === String(espacio.correcta));
+
+        respuestas.push({
+            Id: parseInt(id),
+
+            Usuario: opcionSeleccionada ? opcionSeleccionada.texto : "",
+
+            Correcta: opcionCorrecta ? opcionCorrecta.texto : "",
+
+            EsCorrecta: String(valor) === String(espacio.correcta)
+        });
+    });
+
+    fetch('/Seleccionar/GuardarRespuesta', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            idActividad: parseInt(idActividad),
+            respuestas: respuestas
+        })
+    });
+    }
+
+
+function irForo(idCurso) {
+    window.location.href = `/Cursos/Foro?idCurso=${idCurso}`;
+}
+
+</script>

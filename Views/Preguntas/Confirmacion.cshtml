@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Confirmación";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card text-center shadow p-5" style="border-radius:20px; max-width:400px;">
+        <h3 class="mb-3">La actividad fue creada con éxito!</h3>
+        <p>Espera un momento... :)</p>
+    </div>
+</div>
+
+<script>
+    setTimeout(function () {
+        window.location.href = '/Actividades/Menu?idCurso=@ViewBag.IdCurso';
+    }, 3000); // 3 segundos
+</script>

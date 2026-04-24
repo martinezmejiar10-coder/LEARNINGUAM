@@ -1,0 +1,25 @@
+<h2>Unirse a un curso</h2>
+
+<form method="post">
+
+    <div class="mb-3">
+        <label>Código del curso</label>
+        <input name="codigo" class="form-control"/>
+    </div>
+
+    <button class="btn btn-success">
+        Unirse
+    </button>
+    
+    <a asp-controller="Cursos"
+        asp-action="Index"
+        class="btn btn-outline-secondary">
+            Volver a Mis Cursos
+    </a>
+
+</form>
+
+@if(ViewBag.Error != null)
+{
+    <p style="color:red">@ViewBag.Error</p>
+}

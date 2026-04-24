@@ -1,0 +1,14 @@
+public IActionResult Detalles(int idActividad)
+{
+    var actividad = _context.Actividades
+        .FirstOrDefault(a => a.IdActividad == idActividad);
+
+    if (actividad == null)
+    {
+        return NotFound();
+    }
+
+    ViewBag.Actividad = actividad;
+
+    return View();
+}

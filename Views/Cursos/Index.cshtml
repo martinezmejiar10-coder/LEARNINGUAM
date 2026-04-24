@@ -1,0 +1,177 @@
+@using LEARNINGUAM.Web.Models
+
+@{
+    ViewData["Title"] = "Mis cursos";
+
+    var cursosProfesor = ViewBag.CursosProfesor as List<Curso> ?? new List<Curso>();
+    var cursosAlumno = ViewBag.CursosAlumno as List<Curso> ?? new List<Curso>();
+}
+
+@if (TempData["Mensaje"] != null)
+{
+    <div id="mensajeExito" class="alert alert-success text-center shadow">
+        @TempData["Mensaje"]
+    </div>
+
+    <script>
+        setTimeout(function () {
+            document.getElementById("alerta").style.display = "none";
+        }, 5000);
+    </script>
+}
+
+<div class="container mt-5">
+
+    <!-- BOTONES SUPERIORES -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h2 class="fw-bold"></h2>
+
+        <div>
+            <a asp-controller="Cursos"
+               asp-action="Create"
+               class="btn btn-primary me-2">
+                + Crear curso
+            </a>
+
+            <a asp-controller="Cursos"
+               asp-action="Unirse"
+               class="btn btn-success">
+                Unirse a curso
+            </a>
+        </div>
+
+    </div>
+
+
+    
+    <h4 class="mt-4">Cursos que imparto</h4>
+
+    @if (!cursosProfesor.Any())
+    {
+        <div class="alert alert-info">
+            Aún no has creado ningún curso.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            @foreach (var curso in cursosProfesor)
+            {
+                <div class="col-md-4 mb-3">
+
+                    <div class="card shadow-sm h-100">
+
+                        <div class="card-body">
+
+                            <h5 class="card-title">
+                                @curso.NombreCurso
+                            </h5>
+
+                            <p class="card-text">
+                                @curso.Descripcion
+                            </p>
+
+                            <span class="badge bg-success mb-2">
+                                Código: @curso.CodigoAcceso
+                            </span>
+
+                            <br />
+
+                            <a asp-controller="Cursos"
+                               asp-action="Foro"
+                               asp-route-idCurso="@curso.IdCurso"
+                               class="btn btn-info btn-sm mt-2">
+                                Entrar
+                            </a>
+
+                            <a asp-controller="Cursos"  
+                                asp-action="Delete"  
+                                asp-route-id="@curso.IdCurso"  
+                                class="btn btn-danger btn-sm mt-2">  
+                                Eliminar  
+                            </a>
+
+                            
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+
+    <hr class="mt-5 mb-4"/>
+
+
+    
+    <h4>Cursos donde estoy inscrito</h4>
+
+    @if (!cursosAlumno.Any())
+    {
+        <div class="alert alert-warning">
+            Aún no estás inscrito en ningún curso.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            @foreach (var curso in cursosAlumno)
+            {
+                <div class="col-md-4 mb-3">
+
+                    <div class="card shadow-sm h-100">
+
+                        <div class="card-body">
+
+                            <h5 class="card-title">
+                                @curso.NombreCurso
+                            </h5>
+
+                            <p class="card-text">
+                                @curso.Descripcion
+                            </p>
+
+                            <a asp-controller="Cursos"
+                               asp-action="Foro"
+                               asp-route-idCurso="@curso.IdCurso"
+                               class="btn btn-info btn-sm mt-2">
+                                Entrar
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
+
+<style>
+    #mensajeExito {
+        transition: opacity 0.5s ease;
+    }
+</style>
+
+<script>
+    setTimeout(() => {
+        let alerta = document.getElementById("mensajeExito");
+        if (alerta) {
+            alerta.style.opacity = "0";
+
+            setTimeout(() => {
+                alerta.remove();
+            }, 500);
+        }
+    }, 3000);
+</script>

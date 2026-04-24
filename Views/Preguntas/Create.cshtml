@@ -1,0 +1,268 @@
+@model CuestionarioBuilderViewModel
+
+<div class="container mt-4">
+
+    <h3>Cuestionario</h3>
+
+    <div class="alert alert-info">
+    <strong>¿Cómo se crea esta actividad?</strong><br>
+    1. Selecciona el tipo de pregunta (opción múltiple, verdadero/falso o checkbox).<br>
+    2. Escribe la pregunta en el campo correspondiente.<br>
+    3. Agrega las opciones de respuesta necesarias.<br>
+    4. Marca cuál o cuáles son las respuestas correctas.<br>
+    5. Guarda la actividad.<br>
+    <small>(Se recomienda guardar conforme vayas avanzando)</small>
+</div>
+
+    <input type="hidden" id="IdCurso" value="@Model.IdCurso" />
+
+    <div class="mb-3">
+        <button class="btn btn-primary" onclick="agregarPregunta('MULTIPLE')">
+            + Opción Múltiple
+        </button>
+
+        <button class="btn btn-secondary" onclick="agregarPregunta('VF')">
+            + Verdadero/Falso
+        </button>
+
+        <button class="btn btn-info" onclick="agregarPregunta('CHECKBOX')">
+            + Selección Múltiple
+        </button>
+    </div>
+
+    <hr />
+
+    <div id="contenedorPreguntas"></div>
+
+    <div class="text-end mt-4">
+        <button class="btn btn-success" onclick="guardarCuestionario()">
+            Guardar Cuestionario
+        </button>
+    </div>
+
+</div>
+
+
+<script>
+    let preguntasGuardadas = @Html.Raw(Json.Serialize(Model.Preguntas));
+    let preguntas = [];
+
+    console.log("RAW:", preguntasGuardadas);
+
+    if (preguntasGuardadas) {
+
+        if (typeof preguntasGuardadas === "string") {
+            try {
+                preguntasGuardadas = JSON.parse(preguntasGuardadas);
+            } catch {
+                preguntasGuardadas = [];
+            }
+        }
+
+        if (!Array.isArray(preguntasGuardadas)) {
+            preguntasGuardadas = [];
+        }
+
+        if (preguntasGuardadas.length > 0) {
+
+            let contador = 1;
+
+            preguntas = preguntasGuardadas.map(p => ({
+                id: contador++,
+
+                TextoPregunta: p.textoPregunta || p.TextoPregunta || "",
+                Tipo: p.tipo || p.Tipo || "MULTIPLE",
+
+                Opciones: (p.opciones || p.Opciones || []).map(op => ({
+                    Texto: op.texto || op.Texto || "",
+                    EsCorrecta: op.esCorrecta ?? op.EsCorrecta ?? false
+                }))
+            }));
+
+            console.log("Preguntas cargadas:", preguntas);
+
+            renderizar();
+        }
+    }
+
+    function agregarPregunta(tipo) {
+
+        let id = Date.now();
+
+        let nuevaPregunta = {
+            id: id,
+            TextoPregunta: "",
+            Tipo: tipo,
+            Opciones: []
+        };
+
+        if (tipo === "VF") {
+            nuevaPregunta.Opciones = [
+                { Texto: "Verdadero", EsCorrecta: false },
+                { Texto: "Falso", EsCorrecta: false }
+            ];
+        }
+
+        preguntas.push(nuevaPregunta);
+        renderizar();
+    }
+
+    function eliminarPregunta(idPregunta) {
+        preguntas = preguntas.filter(p => p.id !== idPregunta);
+        renderizar();
+    }
+
+    function agregarOpcion(idPregunta) {
+        let pregunta = preguntas.find(p => p.id === idPregunta);
+        pregunta.Opciones.push({ Texto: "", EsCorrecta: false });
+        renderizar();
+    }
+
+    function actualizarTexto(idPregunta, valor) {
+        let pregunta = preguntas.find(p => p.id === idPregunta);
+        pregunta.TextoPregunta = valor;
+    }
+
+    function actualizarOpcion(idPregunta, index, valor) {
+        let pregunta = preguntas.find(p => p.id === idPregunta);
+        pregunta.Opciones[index].Texto = valor;
+    }
+
+    function marcarCorrecta(idPregunta, index) {
+
+        let pregunta = preguntas.find(p => p.id === idPregunta);
+
+        if (pregunta.Tipo === "CHECKBOX") {
+            pregunta.Opciones[index].EsCorrecta =
+                !pregunta.Opciones[index].EsCorrecta;
+        } else {
+            pregunta.Opciones.forEach(op => op.EsCorrecta = false);
+            pregunta.Opciones[index].EsCorrecta = true;
+        }
+    }
+
+    function renderizar() {
+
+        let contenedor = document.getElementById("contenedorPreguntas");
+        contenedor.innerHTML = "";
+
+        preguntas.forEach(p => {
+
+            let html = `
+            <div class="card p-4 mb-4 shadow-sm" style="border-radius:15px;">
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <strong>${p.Tipo}</strong>
+                    <button class="btn btn-sm btn-danger"
+                            onclick="eliminarPregunta(${p.id})">
+                        Eliminar
+                    </button>
+                </div>
+
+                <input type="text"
+                    class="form-control mb-3"
+                    placeholder="Escribe tu pregunta..."
+                    value="${p.TextoPregunta}"
+                    oninput="actualizarTexto(${p.id}, this.value)" />
+
+                <div>
+            `;
+
+            p.Opciones.forEach((op, index) => {
+
+                let tipoInput =
+                    (p.Tipo === "CHECKBOX") ? "checkbox" : "radio";
+
+                html += `
+                    <div class="mb-2 d-flex align-items-center justify-content-between">
+
+                        <div class="d-flex align-items-center w-100">
+
+                            <input type="${tipoInput}"
+                                class="form-check-input me-2"
+                                name="correcta_${p.id}"
+                                ${op.EsCorrecta ? "checked" : ""}
+                                onclick="marcarCorrecta(${p.id}, ${index})" />
+
+                            <input type="text"
+                                class="form-control me-2"
+                                value="${op.Texto}"
+                                oninput="actualizarOpcion(${p.id}, ${index}, this.value)" />
+
+                        </div>
+
+                        ${
+                            p.Tipo !== "VF"
+                            ? `<button class="btn btn-sm btn-outline-danger"
+                                    onclick="eliminarOpcion(${p.id}, ${index})">
+                                    ✕
+                               </button>`
+                            : ""
+                        }
+
+                    </div>
+                `;
+            });
+
+            if (p.Tipo !== "VF") {
+                html += `
+                    <button class="btn btn-sm btn-outline-secondary mt-2"
+                            onclick="agregarOpcion(${p.id})">
+                        + Agregar opción
+                    </button>
+                `;
+            }
+
+            html += `</div></div>`;
+
+            contenedor.innerHTML += html;
+        });
+    }
+
+    function guardarCuestionario() {
+
+        if (preguntas.length === 0) {
+            alert("Agrega al menos una pregunta");
+            return;
+        }
+
+        let idCurso = document.getElementById("IdCurso").value;
+
+        fetch('/Preguntas/GuardarCuestionario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                IdCuestionario: @Model.IdCuestionario,
+                IdCurso: idCurso,
+                Preguntas: preguntas
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            if (data.success) {
+                window.location.href = `/Cursos/Foro?idCurso=${idCurso}`;
+            } else {
+                alert("Error al guardar");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error al guardar");
+        });
+    }
+
+    function eliminarOpcion(idPregunta, index) {
+
+        let pregunta = preguntas.find(p => p.id === idPregunta);
+
+        if (pregunta.Opciones.length <= 2) {
+            alert("Debe haber mínimo 2 opciones");
+            return;
+        }
+
+        pregunta.Opciones.splice(index, 1);
+
+        renderizar();
+    }
+</script>

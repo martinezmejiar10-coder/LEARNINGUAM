@@ -1,0 +1,95 @@
+@model LEARNINGUAM.Web.Models.Pregunta
+
+@{
+    ViewData["Title"] = "Agregar Opciones";
+}
+
+<div class="container mt-4">
+
+    <div class="card shadow rounded-4">
+        <div class="card-header bg-dark text-white rounded-top-4">
+            <h5 class="mb-0">Pregunta:</h5>
+        </div>
+
+        <div class="card-body">
+
+            <h5 class="mb-4">@Model.TextoPregunta</h5>
+
+            @if (Model.Tipo == "VF")
+            {
+                <p>Seleccione cuál es la respuesta correcta:</p>
+
+                <form asp-action="GuardarVF" method="post">
+                    <input type="hidden" name="IdPregunta" value="@Model.IdPregunta" />
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="correcta" value="Verdadero" required />
+                        <label class="form-check-label">Verdadero</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="correcta" value="Falso" required />
+                        <label class="form-check-label">Falso</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        Guardar
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="AgregarOpcion" method="post">
+
+                    <input type="hidden" name="IdPregunta" value="@Model.IdPregunta" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Texto de la opción</label>
+                        <input name="Texto" class="form-control" required />
+                    </div>
+
+                    @if (Model.Tipo == "MULTIPLE")
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="EsCorrecta" value="1" />
+                            <label class="form-check-label">Es correcta</label>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="EsCorrecta" value="1" />
+                            <label class="form-check-label">Es correcta</label>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-success mt-3">
+                        Agregar Opción
+                    </button>
+
+                </form>
+            }
+
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="d-flex justify-content-between mt-4">
+
+        <a asp-action="Create"
+           asp-route-idCuestionario="@ViewBag.IdCuestionario"
+           class="btn btn-outline-primary">
+            + Agregar Otra Pregunta
+        </a>
+
+        <a asp-controller="Cuestionarios"
+           asp-action="Details"
+           asp-route-id="@ViewBag.IdCuestionario"
+           class="btn btn-success">
+            Finalizar Cuestionario
+        </a>
+
+    </div>
+
+</div>

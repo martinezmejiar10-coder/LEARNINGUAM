@@ -1,0 +1,35 @@
+@using LEARNINGUAM.Web.Models
+@model Curso
+
+<div class="container mt-4">
+
+    <div class="card shadow p-4">
+
+        <h3 class="text-danger">¿Eliminar curso?</h3>
+
+        <hr />
+
+        <h4>@Model.NombreCurso</h4>
+        <p>@Model.Descripcion</p>
+
+        <span class="badge bg-secondary">
+            Código: @Model.CodigoAcceso
+        </span>
+
+        <br /><br />
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="IdCurso" />
+
+            <button type="submit" class="btn btn-danger">
+                Eliminar
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </form>
+
+    </div>
+
+</div>

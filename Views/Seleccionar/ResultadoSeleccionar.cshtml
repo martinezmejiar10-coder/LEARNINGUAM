@@ -1,0 +1,65 @@
+@model List<DetalleArrastrarVM>
+
+<div class="container mt-5">
+
+    <h2 class="text-center mb-4">Resultado de la actividad</h2>
+
+    <div class="card p-4 shadow-sm">
+
+        @foreach (var item in Model)
+        {
+            <div class="mb-4 p-3 border rounded">
+
+                <h5>Espacio @item.Id</h5>
+
+                <div class="mt-2">
+
+                    <strong> Tus respuestas fuerón:</strong>
+
+                    @if (!string.IsNullOrEmpty(item.Usuario))
+                    {
+                        if (item.EsCorrecta)
+                        {
+                            <div style="color:green;">
+                                ✓ @item.Usuario
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="color:red;">
+                                ❌ @item.Usuario
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted">
+                            ❌ No respondiste
+                        </div>
+                    }
+
+                </div>
+
+                <div class="mt-2">
+                    <strong> Respuesta correcta:</strong>
+
+                    <div style="color:green;">
+                        ✓ @item.Correcta
+                    </div>
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+    <div class="text-center mt-4">
+        <a asp-controller="Cursos"
+           asp-action="Foro"
+           asp-route-idCurso="@ViewBag.IdCurso"
+           class="btn btn-primary">
+            Volver al curso
+        </a>
+    </div>
+
+</div>

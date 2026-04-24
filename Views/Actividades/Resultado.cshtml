@@ -1,0 +1,19 @@
+<div class="container mt-5 text-center">
+
+    <h2>Resultado del cuestionario</h2>
+
+    <h3 class="mt-4">
+        @ViewBag.Correctas / @ViewBag.Total
+    </h3>
+
+    <h4 class="mt-2">
+        @ViewBag.Porcentaje %
+    </h4>
+
+    <a asp-controller="Cursos"
+       asp-action="Index"
+       class="btn btn-primary mt-4">
+        Volver a cursos
+    </a>
+
+</div>

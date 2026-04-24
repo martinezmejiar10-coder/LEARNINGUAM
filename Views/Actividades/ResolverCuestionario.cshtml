@@ -1,0 +1,55 @@
+@model List<LEARNINGUAM.Web.Models.Pregunta>
+    
+<div class="container mt-4">
+
+    <h2 class="mb-4">Cuestionario</h2>
+
+    <form method="post" asp-action="ResolverCuestionario">
+
+        @foreach (var pregunta in Model)
+        {
+            <div class="card mb-3 shadow-sm">
+
+                <div class="card-body">
+
+                    <h5 class="fw-bold">
+                        @pregunta.TextoPregunta
+                    </h5>
+
+                    <hr />
+
+                    @{
+                        var tipoInput = pregunta.Tipo == "CHECKBOX" ? "checkbox" : "radio";
+                    }
+
+                    @foreach (var opcion in pregunta.Opciones)
+                    {
+                        <div class="form-check">
+
+                            <input class="form-check-input"
+                                type="@tipoInput"
+                                name="pregunta_@pregunta.IdPregunta"
+                                value="@opcion.IdOpcion"
+                                @(pregunta.Tipo != "CHECKBOX" ? "required" : "") />
+
+                            <label class="form-check-label">
+                                @opcion.Texto
+                            </label>
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <button class="btn btn-primary btn-lg">
+                Enviar respuestas
+            </button>
+        </div>
+
+    </form>
+
+</div>

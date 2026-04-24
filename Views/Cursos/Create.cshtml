@@ -1,0 +1,27 @@
+@model Curso
+
+<h2>Crear curso</h2>
+
+<form method="post">
+
+    <div class="mb-3">
+        <label>Nombre del curso</label>
+        <input asp-for="NombreCurso" class="form-control"/>
+    </div>
+
+    <div class="mb-3">
+        <label>Descripción</label>
+        <input asp-for="Descripcion" class="form-control"/>
+    </div>
+
+    <button class="btn btn-primary">
+        Crear curso
+    </button>
+
+    <a asp-controller="Cursos"
+        asp-action="Index"
+        class="btn btn-outline-secondary">
+            Volver a Mis Cursos
+    </a>
+
+</form>

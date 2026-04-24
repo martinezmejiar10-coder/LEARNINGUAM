@@ -1,0 +1,347 @@
+<input type="hidden" id="IdActividad" value="@ViewBag.IdActividad" />
+
+<input type="hidden" id="IdCurso" value="@ViewBag.IdCurso" />
+
+<div class="container mt-4">
+
+    <div class="card p-4">
+
+        <h4>Crear actividad de selección</h4>
+        <div class="alert alert-info">
+            <strong>¿Cómo se crea esta actividad?</strong><br>
+            1. Escribe el texto de la actividad.<br>
+            2. Agrega espacios dentro del texto (se insertarán como listas desplegables).<br>
+            3. Para cada espacio, se tiene que agregar diferentes opciones.<br>
+            4. Selecciona cuál es la opción correcta.<br>
+            5. Guarda la actividad.
+        </div>
+
+        <!-- TEXTO -->
+        <label>Texto de la actividad</label>
+        <div id="texto" class="form-control" contenteditable="true" style="min-height:120px;" ></div>
+
+        <!-- ESPACIOS -->
+        <div id="espacios"></div>
+
+        <button class="btn btn-secondary mt-2" onclick="agregarEspacio()">
+            Agregar espacio
+        </button>
+
+        <hr />
+
+        <button class="btn btn-success" onclick="guardar()">
+            Guardar actividad
+        </button>
+
+    </div>
+
+</div>
+
+<style>
+    #texto:empty:before {
+    content: "Ej: La [SELECT] permite crear aplicaciones junto a [SELECT] y CSS";
+    color: #6c757d; /* gris tipo placeholder */
+}
+</style>
+
+<script>
+
+    let contenidoGuardado = @Html.Raw(Json.Serialize(ViewBag.Contenido));
+    let espacios = [];
+    let contadorEspacios = 1;
+    let contadorOpciones = 1;
+
+    let texto = document.getElementById("texto");
+
+    texto.addEventListener("focus", function () {
+        if (this.innerText.trim() === "Escribe aquí el texto de la actividad...") {
+            this.innerText = "";
+            this.classList.remove("text-muted");
+        }
+    });
+
+    texto.addEventListener("blur", function () {
+        if (this.innerText.trim() === "") {
+            this.innerText = "Escribe aquí el texto de la actividad...";
+            this.classList.add("text-muted");
+        }
+    });
+
+
+    if (contenidoGuardado && contenidoGuardado !== "null") {
+
+        let data = JSON.parse(contenidoGuardado);
+
+        document.getElementById("texto").innerHTML = data.texto;
+
+        espacios = data.espacios || [];
+
+        document.querySelector("h4").innerText = "Editar actividad de selección";
+
+        if (espacios.length > 0) {
+
+            contadorEspacios = Math.max(...espacios.map(e => e.id)) + 1;
+
+            contadorOpciones = Math.max(
+                ...espacios.flatMap(e => e.opciones.map(op => op.id))
+            ) + 1;
+        }
+
+        document.getElementById("espacios").innerHTML = "";
+
+        espacios.forEach(e => {
+            agregarEspacioUI(e);
+            renderOpciones(e.id);
+        });
+    }
+
+
+    function agregarEspacio() {
+
+        let id = contadorEspacios++;
+
+        let nuevo = {
+            id: id,
+            opciones: [],
+            correcta: null
+        };
+
+        espacios.push(nuevo);
+
+        let selectHTML = `<select class="form-select form-select-sm d-inline w-auto mx-1"
+                            data-id="${id}">
+            <option value="">Seleccionar</option>
+        </select>`;
+
+        insertarEnCursor(selectHTML);
+
+        agregarEspacioUI(nuevo);
+    }
+
+
+    function insertarEnCursor(html) {
+
+        let sel = window.getSelection();
+
+        if (!sel.rangeCount) return;
+
+        let range = sel.getRangeAt(0);
+        range.deleteContents();
+
+        let el = document.createElement("span");
+        el.innerHTML = html;
+
+        let frag = document.createDocumentFragment();
+        let node;
+
+        while ((node = el.firstChild)) {
+            frag.appendChild(node);
+        }
+
+        range.insertNode(frag);
+
+        range.collapse(false);
+    }
+
+
+    function agregarEspacioUI(e) {
+
+        let contenedor = document.getElementById("espacios");
+
+        contenedor.insertAdjacentHTML("beforeend", `
+            <div class="card p-3 mt-2" id="espacio_${e.id}">
+
+                <h6>
+                    Espacio
+                    <button class="btn btn-sm btn-danger ms-2"
+                            onclick="eliminarEspacio(${e.id})">
+                        Eliminar
+                    </button>
+                </h6>
+
+                <input type="text" placeholder="Opción"
+                    id="op_${e.id}" class="form-control mb-2">
+
+                <button onclick="agregarOpcion(${e.id})"
+                        class="btn btn-sm btn-primary mb-2">
+                    Agregar opción
+                </button>
+
+                <div id="lista_${e.id}"></div>
+
+            </div>
+        `);
+    }
+
+
+    function agregarOpcion(id) {
+
+        let input = document.getElementById("op_" + id);
+        let valor = input.value.trim();
+
+        if (!valor) return;
+
+        let espacio = espacios.find(e => e.id == id);
+
+        if (espacio.opciones.some(op => op.texto === valor)) {
+            alert("Esa opción ya existe");
+            return;
+        }
+
+        let opcionId = contadorOpciones++;
+
+        espacio.opciones.push({
+            id: opcionId,
+            texto: valor
+        });
+
+        input.value = "";
+
+        renderOpciones(id);
+    }
+
+
+    function eliminarEspacio(id) {
+
+        if (!confirm(`¿Eliminar espacio [${id}]?`)) return;
+
+        espacios = espacios.filter(e => e.id !== id);
+
+        document.querySelectorAll(`select[data-id='${id}']`)
+            .forEach(el => el.remove());
+
+        document.getElementById("espacio_" + id)?.remove();
+    }
+
+
+    function renderOpciones(id) {
+
+        let espacio = espacios.find(e => e.id == id);
+        let contenedor = document.getElementById("lista_" + id);
+
+        contenedor.innerHTML = "";
+
+        espacio.opciones.forEach(op => {
+
+            let div = document.createElement("div");
+            div.className = "d-flex justify-content-between align-items-center";
+
+            let izquierda = document.createElement("div");
+
+            let radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "correcta_" + id;
+            radio.value = op.id;
+
+            if (String(espacio.correcta) === String(op.id)) {
+                radio.checked = true;
+            }
+
+            radio.onchange = () => setCorrecta(id, op.id);
+
+            izquierda.appendChild(radio);
+            izquierda.appendChild(document.createTextNode(" " + op.texto));
+
+            let btn = document.createElement("button");
+            btn.className = "btn btn-sm btn-outline-danger";
+            btn.innerText = "✕";
+            btn.onclick = () => eliminarOpcion(id, op.id);
+
+            div.appendChild(izquierda);
+            div.appendChild(btn);
+
+            contenedor.appendChild(div);
+        });
+    }
+
+
+    function eliminarOpcion(id, opcionId) {
+
+        let espacio = espacios.find(e => e.id == id);
+
+        if (espacio.opciones.length <= 2) {
+            alert("Debe haber al menos 2 opciones");
+            return;
+        }
+
+        espacio.opciones = espacio.opciones.filter(op => op.id !== opcionId);
+
+        if (String(espacio.correcta) === String(opcionId)) {
+            espacio.correcta = null;
+        }
+
+        renderOpciones(id);
+    }
+
+
+    function setCorrecta(id, opcionId) {
+        let espacio = espacios.find(e => e.id == id);
+        espacio.correcta = String(opcionId);
+    }
+
+
+    function guardar() {
+
+        let texto = document.getElementById("texto").innerHTML;
+        let idActividad = document.getElementById("IdActividad").value;
+
+        if (!texto.trim()) {
+            alert("Debes escribir el texto");
+            return;
+        }
+
+        if (espacios.length === 0) {
+            alert("Debes agregar al menos un espacio");
+            return;
+        }
+
+        for (let e of espacios) {
+
+            if (e.opciones.length < 2) {
+                alert(`Espacio ${e.id} necesita mínimo 2 opciones`);
+                return;
+            }
+
+            if (!e.correcta) {
+                alert(`Selecciona la correcta en espacio ${e.id}`);
+                return;
+            }
+        }
+
+        let contenedor = document.getElementById("texto");
+
+        for (let e of espacios) {
+            if (!contenedor.querySelector(`select[data-id='${e.id}']`)) {
+                alert(`El espacio ${e.id} no está en el texto`);
+                return;
+            }
+        }
+
+        let contenido = {
+            texto: texto,
+            espacios: espacios
+        };
+
+        fetch('/Actividades/GuardarContenido', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                IdActividad: parseInt(idActividad),
+                Contenido: JSON.stringify(contenido)
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            console.log("Guardado OK:", data);
+
+            let idCurso = document.getElementById("IdCurso").value;
+            window.location.href = `/Cursos/Foro?idCurso=${idCurso}`;
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error al guardar la actividad");
+        });
+    }
+
+</script>
